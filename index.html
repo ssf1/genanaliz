@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="tr-tr">
+    <head>
+        <!-- Recommended meta tags -->
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1.0">
+        
+        <title>GEN EKSPRESYON ANALİZİ (SOLVER BIO-Q)</title>
+
+		<script type="text/javascript"> </script>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8">
+		
+        <!-- PyScript CSS -->
+        <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
+        <!-- CSS for examples -->
+        <link rel="stylesheet" href="./assets/css/examples.css" />
+
+        <!-- This script tag bootstraps PyScript -->
+        <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+
+        <!-- Solver site css - ofo -->
+        <link rel="stylesheet" href="./assets/css/solver.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">    
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.3/xlsx.full.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <style>
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+            }
+            th, td {
+                border: 1px solid black;
+                padding: 8px;
+                text-align: left;
+            }
+            .control { background-color: lightgray; }
+            canvas {
+                max-width: 600px;
+                margin: 20px auto;
+                display: block;
+            }
+        </style>
+
+    </head>
+ 
+    <body>
+        <header>
+            <div class="logo">
+                <img src="assets/logo_tum.png" alt="solver logo" width="500px">
+            </div>
+            <div id="uyelik">
+                <img src="assets/giris_tum.png" alt="uyelik" width="200px">
+            </div>
+        </header>
+            
+        <nav class="navbar">
+            <ul>
+                <li><a href="#">ANASAYFA</a></li>
+                <li><a href="#">HAKKIMIZDA</a></li>
+                <li><a href="#">BİRİMLERİMİZ</a>
+                    <ul class="submenu">
+                        <li><a>Birim 1</a></li>
+                        <li><a>Birim 2</a></li>
+                     </ul>
+                </li>  
+                <li><a href="#">ÜRÜNLERİMİZ</a>
+                    <ul class="submenu">
+                        <li><a>Ürün 1</a></li>
+                        <li><a>Ürün 2</a></li>
+                        <li><a>Ürün 3</a></li>
+                        <li><a>Ürün 4</a></li>
+                        <li><a>Ürün 5</a></li>
+                        <li><a>Ürün 6</a></li>
+                     </ul>
+                </li> 
+                <li><a href="#">HİZMETLERİMİZ</a>
+                    <ul class="submenu">
+                        <li><a>Hizmet 1</a></li>
+                        <li><a>Hizmet 2</a></li>
+                        <li><a>Hizmet 3</a></li>
+                        <li><a>Hizmet 4</a></li>
+                     </ul>
+                </li> 
+                <li><a href="#">FİYATLANDIRMA</a></li>
+                <li><a href="#">SOSYAL MEDYA</a>
+                    <ul class="submenu">
+                        <li><a>YOUTUBE</a></li>
+                        <li><a>INSTAGRAM</a></li>
+                     </ul>
+                </li> 
+                <li><a href="#">İLETİŞİM</a></li>
+            </ul>
+        </nav>
+       
+        <section>
+            <div class="banner">
+                <h5>Analiz, Hizmet, Laboratuvar, Atölye ve ARGE'de en iyisi.</h5>
+                <h5>Çünkü, sizinle çalışıyoruz....</h5>
+            </div>
+            <div class="aciklama">
+                <p>Gen ekspresyon analizi sonuçlarının değerlendirilebilmesi için: </p>
+                <ul>
+                    <li><p>Aşağıdaki linkten taslak formatı indirip </p></li>
+                    <li><p>ct değerlerinizi girdikten sonra </p> </li>
+                    <li><p>sayfa sonundan yükleme yapmanız gerekmektedir.</p></li>
+                </ul>
+            </div>
+            <div class="down_link">
+                <button class="button" onclick="document.location='https://docs.google.com/spreadsheets/d/146Ze7I1N_XCAB6R7-OpJ6AvGauGX_2RL/export?format=xlsx'">
+                    <div class="dosyaindir">Taslak dosyayı indir </div>
+                    <div class="downsembol"><i class="fa fa-download"></i></div>
+                </button>
+            </div>
+        </section>
+        <section class="hesaplama">
+            <h2>Excel Dosyası Yükleyin</h2>
+            <input type="file" id="excelFile" accept=".xlsx, .xls">
+            <h3>Yüklenen Veriler</h3>
+            <table border="1" id="dataTable"></table>
+            <h3>2^-ΔΔCt Sonuçları</h3>
+            <table border="1" id="resultsTable"></table>
+            <h3>Gen Ekspresyon Grafikleri</h3>
+            <div id="charts"></div>
+            
+            <script>
+                const colors = ["#ffe6e6", "#e6f9ff", "#f9e6ff", "#e6ffe6", "#f9ecec", "#fff2e6", "#e6faff"];                
+                const colors2 = ["#ff3333", "#33ccff", "#c61aff", "#00e600", "#ac3939", "#e67300", "#00a3cc"];
+
+                const controlColor = "#f2f2f2";
+                const controlColor2 = "#b3b3b3";
+                
+                document.getElementById('excelFile').addEventListener('change', function(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheetName = workbook.SheetNames[0];
+                        const sheet = workbook.Sheets[sheetName];
+                        
+                        // Toplam sütun sayısını bul
+                        const range = XLSX.utils.decode_range(sheet['!ref']);
+                        const totalColumns = range.e.c + 1;
+                        
+                        // Boş hücreleri 0 olarak ayarla ve verileri al
+                        let jsonData = XLSX.utils.sheet_to_json(sheet, { 
+                            header: 1,
+                            defval: 0,
+                            raw: false 
+                        }).map(row => {
+                            // Her satırı işle
+                            const processedRow = row.map((cell, index) => {
+                                // İlk sütun (grup adları) için işlem yapma
+                                if (index === 0) return cell;
+                                // Sayısal değerleri 2 ondalık basamağa yuvarla
+                                return isNaN(cell) ? cell : Number(parseFloat(cell).toFixed(2));
+                            });
+                            
+                            // Eksik sütunları 0 ile doldur
+                            while (processedRow.length < totalColumns) {
+                                processedRow.push(0);
+                            }
+                            
+                            return processedRow;
+                        });
+
+                        // Başlık satırını ayır
+                        const headerRow = jsonData[0];
+                        const dataRows = jsonData.slice(1);
+
+                        // Sadece anlamlı veri içeren satırları filtrele
+                        const filteredRows = dataRows.filter(row => {
+                            // İlk sütunu (grup adı) hariç tut ve diğer değerlerin toplamını kontrol et
+                            const sum = row.slice(1).reduce((acc, val) => acc + (typeof val === 'number' ? val : 0), 0);
+                            return sum > 0;
+                        });
+
+                        // Filtrelenmiş veriyi başlık satırıyla birleştir
+                        const processedData = [headerRow, ...filteredRows];
+                        
+                        displayTable(processedData);
+                        calculateAndGenerateCharts(processedData);
+                    };
+                    reader.readAsArrayBuffer(file);
+                });
+        
+                function displayTable(data) {
+                    const table = document.getElementById('dataTable');
+                    table.innerHTML = '';
+                    
+                    let groupIndex = -1;
+                    let groupColors = {};
+                    
+                    // Başlık satırını ekle
+                    const headerRow = document.createElement('tr');
+                    data[0].forEach(cell => {
+                        const th = document.createElement('th');
+                        th.textContent = cell;
+                        headerRow.appendChild(th);
+                    });
+                    table.appendChild(headerRow);
+                    
+                    function createTableRow(rowData) {
+                        const tr = document.createElement('tr');
+                        const group = rowData[0];
+                        
+                        if (group === 'Control') {
+                            tr.style.backgroundColor = controlColor;
+                        } else {
+                            if (!groupColors[group]) {
+                                groupIndex++;
+                                groupColors[group] = colors[groupIndex % colors.length];
+                            }
+                            tr.style.backgroundColor = groupColors[group];
+                        }
+                        
+                        rowData.forEach(cell => {
+                            const td = document.createElement('td');
+                            td.textContent = cell;
+                            tr.appendChild(td);
+                        });
+                        return tr;
+                    }
+                    
+                    // İlk 5 satırı ekle
+                    for (let i = 1; i < Math.min(6, data.length); i++) {
+                        table.appendChild(createTableRow(data[i]));
+                    }
+                    
+                    // Eğer 10'dan fazla satır varsa, göster/gizle düğmesi ekle
+                    if (data.length > 10) {
+                        const placeholderRow = document.createElement('tr');
+                        const placeholderCell = document.createElement('td');
+                        placeholderCell.colSpan = data[0].length;
+                        placeholderCell.style.textAlign = 'center';
+                        placeholderCell.style.padding = '10px';
+                        
+                        const showMoreBtn = document.createElement('button');
+                        showMoreBtn.textContent = 'Tüm verileri göster';
+                        showMoreBtn.style.padding = '5px 10px';
+                        showMoreBtn.style.cursor = 'pointer';
+                        
+                        let isExpanded = false;
+                        showMoreBtn.onclick = () => {
+                            isExpanded = !isExpanded;
+                            if (isExpanded) {
+                                // Tüm satırları göster
+                                placeholderRow.style.display = 'none';
+                                for (let i = 6; i < data.length; i++) {
+                                    table.appendChild(createTableRow(data[i]));
+                                }
+                                showMoreBtn.textContent = 'Daha az göster';
+                            } else {
+                                // Sadece ilk 5 satırı göster
+                                const rows = table.getElementsByTagName('tr');
+                                while (rows.length > 6) { // Başlık + 5 satır
+                                    table.removeChild(rows[6]);
+                                }
+                                placeholderRow.style.display = '';
+                                showMoreBtn.textContent = 'Tüm verileri göster';
+                            }
+                        };
+                        
+                        placeholderCell.appendChild(showMoreBtn);
+                        placeholderRow.appendChild(placeholderCell);
+                        table.appendChild(placeholderRow);
+                    }
+                }
+        
+                function calculateAndGenerateCharts(data) {
+                    const chartsContainer = document.getElementById('charts');
+                    chartsContainer.innerHTML = '';
+                    const resultsTable = document.getElementById('resultsTable');
+                    resultsTable.innerHTML = '';
+        
+                    if (data.length < 2) return;
+        
+                    // Başlıkları al (3. sütundan itibaren genler)
+                    const headers = data[0].slice(2);
+                    const housekeepingIndex = 1; // Housekeeping gen 2. sütunda
+                    const controlValues = [];
+                    const groups = {};
+        
+                    // Grupları ayır ve değerleri topla
+                    data.slice(1).forEach(row => {
+                        const group = row[0];
+                        const housekeepingValue = Number(row[housekeepingIndex]);
+                        // 100000'den büyük değerleri filtrele
+                        const geneValues = row.slice(2).map(Number).map(value => value > 100000 ? null : value);
+                        
+                        // Null olmayan değerleri housekeeping gene göre normalize et
+                        const normalizedValues = geneValues.map(value => 
+                            value === null ? null : value - housekeepingValue
+                        );
+                        
+                        if (group === 'Control') {
+                            controlValues.push(normalizedValues);
+                        } else {
+                            if (!groups[group]) groups[group] = [];
+                            groups[group].push(normalizedValues);
+                        }
+                    });
+        
+                    if (controlValues.length === 0) return;
+        
+                    // Kontrol grubu ortalamasını hesapla (null değerleri hariç tut)
+                    const controlMean = controlValues[0].map((_, index) => {
+                        const validValues = controlValues
+                            .map(row => row[index])
+                            .filter(value => value !== null);
+                        return validValues.length > 0 ? 
+                            validValues.reduce((a, b) => a + b, 0) / validValues.length : null;
+                    });
+        
+                    // Tablo başlığını oluştur
+                    const resultsHeader = document.createElement('tr');
+                    resultsHeader.innerHTML = '<th>Gen</th><th>Control</th>' + 
+                        Object.keys(groups).map(g => `<th>${g}</th>`).join('');
+                    resultsTable.appendChild(resultsHeader);
+        
+                    // Her gen için hesaplama yap
+                    headers.forEach((gene, index) => {
+                        const geneValues = { 'Control': 1 };
+                        const resultsRow = document.createElement('tr');
+                        
+                        // Gen adı hücresi
+                        const genCell = document.createElement('td');
+                        genCell.textContent = gene;
+                        resultsRow.appendChild(genCell);
+                        
+                        // Kontrol grubu hücresi
+                        const controlCell = document.createElement('td');
+                        controlCell.textContent = '1';
+                        controlCell.style.backgroundColor = controlColor;
+                        resultsRow.appendChild(controlCell);
+                        
+                        // Diğer gruplar için hesaplama ve hücre oluşturma
+                        Object.keys(groups).forEach((group, groupIndex) => {
+                            const td = document.createElement('td');
+                            const values = groups[group]
+                                .map(row => row[index])
+                                .filter(value => value !== null);
+                            
+                            if (values.length > 0 && controlMean[index] !== null) {
+                                const foldChanges = values.map(value => {
+                                    const ddCt = value - controlMean[index];
+                                    const foldChange = Math.pow(2, -ddCt);
+                                    return foldChange > 100000 ? null : foldChange;
+                                }).filter(value => value !== null);
+
+                                if (foldChanges.length > 0) {
+                                    const geometricMean = Math.exp(
+                                        foldChanges.reduce((sum, value) => sum + Math.log(value), 0) / foldChanges.length
+                                    );
+                                    td.textContent = geometricMean.toFixed(4);
+                                    geneValues[group] = geometricMean;
+                                } else {
+                                    td.textContent = 'N/A';
+                                    geneValues[group] = null;
+                                }
+                            } else {
+                                td.textContent = 'N/A';
+                                geneValues[group] = null;
+                            }
+                            
+                            // Grup rengini ayarla
+                            td.style.backgroundColor = colors[groupIndex % colors.length];
+                            resultsRow.appendChild(td);
+                        });
+                        
+                        resultsTable.appendChild(resultsRow);
+
+                        // Grafik container oluştur
+                        const chartContainer = document.createElement('div');
+                        chartContainer.style.width = '800px';  // 1200px'in 2/3'ü
+                        chartContainer.style.height = '400px'; // 600px'in 2/3'ü
+                        chartContainer.style.margin = '20px auto';
+                        chartContainer.style.position = 'relative';
+                        
+                        // Grafik başlık ve kontrol butonları için üst bar
+                        const chartHeader = document.createElement('div');
+                        chartHeader.style.display = 'flex';
+                        chartHeader.style.justifyContent = 'space-between';
+                        chartHeader.style.alignItems = 'center';
+                        chartHeader.style.marginBottom = '10px';
+                        
+                        // Başlık
+                        const title = document.createElement('h4');
+                        title.textContent = `${gene} Ekspresyon Grafiği`;
+                        title.style.margin = '0';
+                        
+                        // Buton container
+                        const buttonContainer = document.createElement('div');
+                        
+                        // Genişlet/Daralt butonu
+                        const resizeBtn = document.createElement('button');
+                        resizeBtn.innerHTML = '<i class="fa fa-expand"></i>';
+                        resizeBtn.title = 'Genişlet/Daralt';
+                        resizeBtn.style.marginRight = '10px';
+                        resizeBtn.style.padding = '5px 10px';
+                        resizeBtn.style.cursor = 'pointer';
+                        
+                        // İndir butonu
+                        const downloadBtn = document.createElement('button');
+                        downloadBtn.innerHTML = '<i class="fa fa-download"></i>';
+                        downloadBtn.title = 'Grafiği İndir';
+                        downloadBtn.style.padding = '5px 10px';
+                        downloadBtn.style.cursor = 'pointer';
+                        
+                        buttonContainer.appendChild(resizeBtn);
+                        buttonContainer.appendChild(downloadBtn);
+                        
+                        chartHeader.appendChild(title);
+                        chartHeader.appendChild(buttonContainer);
+                        
+                        // Canvas oluştur
+                        const canvas = document.createElement('canvas');
+                        canvas.style.width = '100%';
+                        canvas.style.height = '100%';
+                        
+                        chartContainer.appendChild(chartHeader);
+                        chartContainer.appendChild(canvas);
+                        chartsContainer.appendChild(chartContainer);
+                        
+                        // Grafiği oluştur
+                        const chart = new Chart(canvas, {
+                            type: 'bar',
+                            data: {
+                                labels: Object.keys(geneValues).filter(k => geneValues[k] !== null),
+                                datasets: [{
+                                    label: gene,
+                                    data: Object.keys(geneValues).filter(k => geneValues[k] !== null).map(k => geneValues[k]),
+                                    backgroundColor: Object.keys(geneValues).filter(k => geneValues[k] !== null).map(k => 
+                                        k === 'Control' ? controlColor2 : colors2[Object.keys(groups).indexOf(k) % colors2.length]),
+                                    borderColor: Object.keys(geneValues).filter(k => geneValues[k] !== null).map(k => 
+                                        k === 'Control' ? controlColor : colors[Object.keys(groups).indexOf(k) % colors.length]),
+                                    borderWidth: 1
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    y: { 
+                                        beginAtZero: true,
+                                        ticks: {
+                                            display: true
+                                        },
+                                        grid: {
+                                            display: true
+                                        },
+                                        title: {
+                                            display: false
+                                        }
+                                    },
+                                    x: {
+                                        ticks: {
+                                            display: true
+                                        },
+                                        grid: {
+                                            display: false
+                                        },
+                                        title: {
+                                            display: false
+                                        }
+                                    }
+                                },
+                                plugins: {
+                                    title: {
+                                        display: true,
+                                        text: `${gene} Gen Ekspresyonu`,
+                                        font: {
+                                            size: 16
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                        
+                        // Genişlet/Daralt fonksiyonu
+                        let isExpanded = false;
+                        resizeBtn.onclick = () => {
+                            isExpanded = !isExpanded;
+                            if (isExpanded) {
+                                chartContainer.style.width = '100%';
+                                chartContainer.style.height = '80vh';
+                                resizeBtn.innerHTML = '<i class="fa fa-compress"></i>';
+                            } else {
+                                chartContainer.style.width = '800px';  // Güncellendi
+                                chartContainer.style.height = '400px';
+                                resizeBtn.innerHTML = '<i class="fa fa-expand"></i>';
+                            }
+                            chart.resize();
+                        };
+                        
+                        // İndirme fonksiyonu
+                        downloadBtn.onclick = () => {
+                            const link = document.createElement('a');
+                            link.download = `${gene}_ekspresyon_grafigi.png`;
+                            link.href = canvas.toDataURL('image/png');
+                            link.click();
+                        };
+                    });
+                }
+            </script>              
+            
+            
+            
+            
+        </section>
+
+    
+        <footer>
+                <div class="vbox wb_container" id="wb_footer">
+                    <div class="wb_cont_inner">
+                        <div id="wb_element_instance250" class="wb_element wb_element_picture" data-plugin="Picture" title="">
+                            <img alt="" src="gallery_gen/86c214ef2a87afce758b4ae27a964141_168x284.png" data-original-width="562"
+                                data-original-height="953">
+                        </div>
+                        <div id="wb_element_instance251" class="wb_element wb_text_element" data-plugin="TextArea"
+                            style=" line-height: normal;">
+                            <h4 class="wb-stl-pagetitle">
+                                <span style="color:rgba(255,255,255,1);">SOLVER</span>
+                            </h4>
+                        </div>
+                        <div id="wb_element_instance252" class="wb_element wb_text_element" data-plugin="TextArea"
+                            style=" line-height: normal;">
+                            <h5 class="wb-stl-subtitle">
+                                <span style="color:rgba(255,255,255,1);">ARGE</span>
+                            </h5>
+                        </div>
+                        <div id="wb_element_instance253" class="wb_element wb_text_element" data-plugin="TextArea"
+                            style=" line-height: normal;">
+                            <p class="wb-stl-footer" style="text-align: right;">Van Teknokent</p>
+                            <p class="wb-stl-footer" style="text-align: right;">No:2</p>
+                            <p class="wb-stl-footer" style="text-align: right;">Tuşba/Kampüs/Van/Türkiye</p>
+                        </div>
+                        <div id="wb_element_instance254" class="wb_element wb_element_picture" data-plugin="Picture" title="">
+                            <a href="https://www.instagram.com/solver_ltdsti/" data-popup-processed="true">
+                                <i class="fa fa-instagram" style="color:#ffffff"></i>
+                            </a>
+                        </div>
+                        <div id="wb_element_instance255" class="wb_element wb_text_element" data-plugin="TextArea"
+                            style=" line-height: normal;">
+                            <p class="wb-stl-footer">© 2021&nbsp;
+                                <a href="http://solver.com.tr" data-popup-processed="true">solver.com.tr</a>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="wb_cont_outer"></div>
+                    <div class="wb_cont_bg"></div>
+                </div>
+        </footer>
+    </body>
+    
+</html>
+
